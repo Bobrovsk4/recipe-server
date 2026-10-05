@@ -11,7 +11,9 @@ using Request  = http::request<http::string_body>;
 using Response = http::response<http::string_body>;
 
 using Handler = std::function<
-    Response(const Request&, const std::vector<std::string>& params)>;
+    Response(const Request&,
+             const std::vector<std::string>& params,
+             const QueryParams& query)>;
 
 class Router {
 public:

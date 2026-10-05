@@ -1,6 +1,5 @@
 #include "presentation/http/Router.hpp"
 #include <sstream>
-#include <iostream>
 
 namespace presentation {
 
@@ -12,6 +11,22 @@ std::vector<std::string> split_path(const std::string& path) {
     std::string part;
     while (std::getline(ss, part, '/'))
         if (!part.empty()) out.push_back(part);
+    return out;
+}
+
+// "type=2&sort=name" -> {"type":"2", "sort":"name"}
+QueryParams parse_query(const std::string& q) {
+    QueryParams out;
+    std::stringstream ss(q);
+    std::string pair;
+    while (std::getline(ss, pair, '&')) {
+        if (pair.empty()) continue;
+        auto eq = pair.find('=');
+        if (eq == std::string::npos)
+            out[pair] = "";
+        else
+            out[pair.substr(0, eq)] = pair.substr(eq + 1);
+    }
     return out;
 }
 
@@ -38,23 +53,22 @@ void Router::add(http::verb method, const std::string& pattern, Handler handler)
 
 Response Router::dispatch(const Request& req) const {
     const auto target = std::string(req.target().data(), req.target().size());
-    const auto method = std::string(http::to_string(req.method()));
 
-    std::cout << "[req] " << method << " " << target << "\n";
+    auto qpos  = target.find('?');
+    auto path  = (qpos == std::string::npos) ? target : target.substr(0, qpos);
+    auto query = (qpos == std::string::npos)
+                     ? std::string{}
+                     : target.substr(qpos + 1);
 
-    const auto actual = split_path(target);
+    const auto actual = split_path(path);
+    const auto qparams = parse_query(query);
+
     for (const auto& r : routes_) {
         if (r.method != req.method()) continue;
         std::vector<std::string> params;
-        if (match(r.segments, actual, params)) {
-            auto res = r.handler(req, params);
-            std::cout << "[res] " << method << " " << target
-                      << " -> " << res.result_int()
-                      << " body=" << res.body() << "\n";
-            return res;
-        }
+        if (match(r.segments, actual, params))
+            return r.handler(req, params, qparams);
     }
-    std::cout << "[res] " << method << " " << target << " -> 404\n";
     return make_json(http::status::not_found, R"({"error":"not found"})");
 }
 
