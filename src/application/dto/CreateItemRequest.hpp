@@ -7,12 +7,13 @@
 namespace application {
 
 struct CreateItemRequest {
+    std::string name;
     domain::TYPES type;
     std::string recipe_text;
     // std::vector<std::string> comments;
 
     domain::Item to_domain() const {
-        return domain::Item{std::nullopt, type, recipe_text};
+        return domain::Item{std::nullopt, name, type, recipe_text};
     }
 };
 

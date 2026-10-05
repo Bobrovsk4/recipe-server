@@ -3,12 +3,14 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace presentation {
 
 namespace http = boost::beast::http;
 using Request  = http::request<http::string_body>;
 using Response = http::response<http::string_body>;
+using QueryParams = std::map<std::string, std::string>;
 
 using Handler = std::function<
     Response(const Request&,

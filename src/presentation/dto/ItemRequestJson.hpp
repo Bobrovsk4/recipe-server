@@ -14,6 +14,8 @@ parse_create_item_request(const std::string& body) {
 
     application::CreateItemRequest req;
 
+    if (auto* t = obj.if_contains("name"))
+        req.name = std::string(t->as_string());
     if (auto* t = obj.if_contains("type"))
         req.type = stot(std::string(t->as_string()));
     if (auto* r = obj.if_contains("recipe_text"))

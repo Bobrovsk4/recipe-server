@@ -10,6 +10,7 @@ namespace json = boost::json;
 inline boost::json::object to_json(const domain::Item& item) {
     boost::json::object obj;
     obj["id"]           = item.id.value_or(0);
+    obj["name"]         = item.name;
     obj["type"]         = ttos(item.type);
     obj["recipe_text"] = item.recipe_text;
 

@@ -16,6 +16,7 @@ int main() {
         conn.execute(R"(
             CREATE TABLE IF NOT EXISTS items (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL,
                 type            TEXT NOT NULL,
                 recipe_text    TEXT NOT NULL
             );

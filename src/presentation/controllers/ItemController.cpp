@@ -23,8 +23,8 @@ void ItemController::register_routes(Router& r) {
     // GET /api/types
     r.add(verb::get, "/api/types",
         [](const Request&,
-        const std::vector<std::string>&,
-        const QueryParams&)
+           const std::vector<std::string>&,
+           const QueryParams&)
     {
         json::array arr;
         for (int i = 0; i < static_cast<int>(domain::TYPES::None); ++i) {
@@ -61,7 +61,9 @@ void ItemController::register_routes(Router& r) {
 
     // GET /api/items/:id
     r.add(verb::get, "/api/items/:id",
-        [this](const Request&, const std::vector<std::string>& p, const QueryParams&) {
+        [this](const Request&,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
             auto id = to_int(p[0]);
             if (!id)
                 return Router::make_json(status::bad_request, error_json("bad id"));
@@ -75,7 +77,9 @@ void ItemController::register_routes(Router& r) {
 
     // POST /api/items
     r.add(verb::post, "/api/items",
-        [this](const Request& req, const std::vector<std::string>&) {
+        [this](const Request& req,
+               const std::vector<std::string>&,
+               const QueryParams&) {
             try {
                 auto req_dto = parse_create_item_request(req.body());
                 auto res     = items_.create(req_dto);
@@ -89,7 +93,9 @@ void ItemController::register_routes(Router& r) {
 
     // PUT /api/items/:id
     r.add(verb::put, "/api/items/:id",
-        [this](const Request& req, const std::vector<std::string>& p, const QueryParams&) {
+        [this](const Request& req,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
             auto id = to_int(p[0]);
             if (!id)
                 return Router::make_json(status::bad_request, error_json("bad id"));
@@ -106,7 +112,9 @@ void ItemController::register_routes(Router& r) {
 
     // DELETE /api/items/:id
     r.add(verb::delete_, "/api/items/:id",
-        [this](const Request&, const std::vector<std::string>& p, const QueryParams&) {
+        [this](const Request&,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
             auto id = to_int(p[0]);
             if (!id)
                 return Router::make_json(status::bad_request, error_json("bad id"));

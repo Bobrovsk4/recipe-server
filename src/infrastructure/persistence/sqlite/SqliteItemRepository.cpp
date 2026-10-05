@@ -43,8 +43,9 @@ std::optional<domain::Item> SqliteItemRepository::get_by_id(const int& id) {
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         result = domain::Item{
             sqlite3_column_int(stmt, 0),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)))),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
+            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         };
     }
 
@@ -59,8 +60,9 @@ std::vector<domain::Item>   SqliteItemRepository::list() {
     while(sqlite3_step(stmt) == SQLITE_ROW) {
         list.push_back(domain::Item{
             sqlite3_column_int(stmt, 0),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)))),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
+            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         });
     }
     
@@ -80,8 +82,9 @@ std::vector<domain::Item>   SqliteItemRepository::list_by_type(domain::TYPES t) 
     while(sqlite3_step(stmt) == SQLITE_ROW) {
         list.push_back(domain::Item{
             sqlite3_column_int(stmt, 0),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)))),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
+            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         });
     }
 
@@ -90,11 +93,12 @@ std::vector<domain::Item>   SqliteItemRepository::list_by_type(domain::TYPES t) 
 }
 
 domain::Item                SqliteItemRepository::create(const domain::Item& item) {
-    const std::string sql = "INSERT INTO items(type, recipe_text) VALUES(?, ?)";
+    const std::string sql = "INSERT INTO items(name, type, recipe_text) VALUES(?, ?, ?)";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
-    sqlite3_bind_int(stmt, 1, ttoi(item.type));
-    sqlite3_bind_text(stmt, 2, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, ttoi(item.type));
+    sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         std::string err_msg = sqlite3_errmsg(con_.handle());
@@ -110,12 +114,13 @@ domain::Item                SqliteItemRepository::create(const domain::Item& ite
 }
 
 std::optional<domain::Item> SqliteItemRepository::update(const int& id, const domain::Item& item) {
-    const std::string sql = "UPDATE items SET type = ?, recipe_text = ? WHERE id = ?";
+    const std::string sql = "UPDATE items SET name = ?, type = ?, recipe_text = ? WHERE id = ?";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
-    sqlite3_bind_int(stmt, 1, ttoi(item.type));
-    sqlite3_bind_text(stmt, 2, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 3, id);
+    sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, ttoi(item.type));
+    sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 4, id);
 
     bool ok = sqlite3_step(stmt) == SQLITE_DONE;
     sqlite3_finalize(stmt);
