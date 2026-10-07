@@ -1,6 +1,5 @@
 #pragma once
 #include "application/dto/CreateItemRequest.hpp"
-#include "presentation/serialization/JsonSerializer.hpp"
 #include <boost/json.hpp>
 
 namespace presentation {
@@ -17,7 +16,7 @@ parse_create_item_request(const std::string& body) {
     if (auto* t = obj.if_contains("name"))
         req.name = std::string(t->as_string());
     if (auto* t = obj.if_contains("type"))
-        req.type = stot(std::string(t->as_string()));
+        req.type_id = t->as_int64();
     if (auto* r = obj.if_contains("recipe_text"))
         req.recipe_text = std::string(r->as_string());
 

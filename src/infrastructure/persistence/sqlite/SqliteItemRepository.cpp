@@ -3,37 +3,12 @@
 
 namespace infrastructure {
 
-namespace {
-
-int ttoi(domain::TYPES t) {
-    switch (t) {
-        case domain::TYPES::Asian:   return 0;
-        case domain::TYPES::Western: return 1;
-        case domain::TYPES::Russian: return 2;
-        case domain::TYPES::Chinese: return 3;
-        case domain::TYPES::None:    return 4;
-    }
-    return 4;
-}
-
-domain::TYPES itot(int v) {
-    switch (v) {
-        case 0:  return domain::TYPES::Asian;
-        case 1:  return domain::TYPES::Western;
-        case 2:  return domain::TYPES::Russian;
-        case 3:  return domain::TYPES::Chinese;
-        default: return domain::TYPES::None;
-    }
-}
-
-}
-
-std::string select = "SELECT * FROM items";
+static const std::string select = "SELECT items.id, items.name, types.name, items.recipe_text FROM items JOIN types ON items.type_id = types.id";
 
 SqliteItemRepository::SqliteItemRepository(SqliteConnection& con) : con_(con) {}
 
 std::optional<domain::Item> SqliteItemRepository::get_by_id(const int& id) {
-    const std::string sql = select + " WHERE id = ?";
+    const std::string sql = select + " WHERE items.id = ?";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_int(stmt, 1, id);
@@ -44,7 +19,7 @@ std::optional<domain::Item> SqliteItemRepository::get_by_id(const int& id) {
         result = domain::Item{
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         };
     }
@@ -61,7 +36,7 @@ std::vector<domain::Item>   SqliteItemRepository::list() {
         list.push_back(domain::Item{
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         });
     }
@@ -70,20 +45,104 @@ std::vector<domain::Item>   SqliteItemRepository::list() {
     return list;
 }
 
-std::vector<domain::Item>   SqliteItemRepository::list_by_type(domain::TYPES t) {
-    std::vector<domain::Item> list;
-    const int type = ttoi(t);
+std::vector<std::pair<int, std::string>> SqliteItemRepository::list_types() {
+    std::vector<std::pair<int, std::string>> types;
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(con_.handle(), "SELECT id, name FROM types ORDER BY id", -1, &stmt, nullptr);
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        types.emplace_back(sqlite3_column_int(stmt, 0),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
+    }
+    sqlite3_finalize(stmt);
+    return types;
+}
 
-    std::string select_by_type = select + " WHERE type = ?";
+std::pair<int, std::string> SqliteItemRepository::create_type(const std::string& name) {
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "INSERT INTO types(name) VALUES(?)";
+    if (sqlite3_prepare_v2(con_.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK)
+        throw std::runtime_error("sqlite prepare failure: " + std::string(sqlite3_errmsg(con_.handle())));
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        const std::string err = sqlite3_errmsg(con_.handle());
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("sqlite insert failure: " + err);
+    }
+    sqlite3_finalize(stmt);
+    return {static_cast<int>(sqlite3_last_insert_rowid(con_.handle())), name};
+}
+
+std::optional<std::pair<int, std::string>> SqliteItemRepository::update_type(const int& id, const std::string& name) {
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "UPDATE types SET name = ? WHERE id = ?";
+    if (sqlite3_prepare_v2(con_.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK)
+        throw std::runtime_error("sqlite prepare failure: " + std::string(sqlite3_errmsg(con_.handle())));
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, id);
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        const std::string err = sqlite3_errmsg(con_.handle());
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("sqlite update failure: " + err);
+    }
+    const bool updated = sqlite3_changes(con_.handle()) > 0;
+    sqlite3_finalize(stmt);
+    if (!updated) return std::nullopt;
+    return std::make_pair(id, name);
+}
+
+bool SqliteItemRepository::remove_type(const int& id) {
+    auto* db = con_.handle();
+    char* error = nullptr;
+    if (sqlite3_exec(db, "BEGIN", nullptr, nullptr, &error) != SQLITE_OK) {
+        const std::string message = error ? error : sqlite3_errmsg(db);
+        sqlite3_free(error);
+        throw std::runtime_error("sqlite transaction failure: " + message);
+    }
+
+    auto rollback = [&]() { sqlite3_exec(db, "ROLLBACK", nullptr, nullptr, nullptr); };
+    auto delete_by_type = [&](const char* sql) {
+        sqlite3_stmt* stmt = nullptr;
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+            throw std::runtime_error("sqlite prepare failure: " + std::string(sqlite3_errmsg(db)));
+        sqlite3_bind_int(stmt, 1, id);
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            const std::string message = sqlite3_errmsg(db);
+            sqlite3_finalize(stmt);
+            throw std::runtime_error("sqlite delete failure: " + message);
+        }
+        sqlite3_finalize(stmt);
+        return sqlite3_changes(db) > 0;
+    };
+
+    try {
+        delete_by_type("DELETE FROM items WHERE type_id = ?");
+        const bool removed = delete_by_type("DELETE FROM types WHERE id = ?");
+        if (sqlite3_exec(db, "COMMIT", nullptr, nullptr, &error) != SQLITE_OK) {
+            const std::string message = error ? error : sqlite3_errmsg(db);
+            sqlite3_free(error);
+            rollback();
+            throw std::runtime_error("sqlite commit failure: " + message);
+        }
+        return removed;
+    } catch (...) {
+        rollback();
+        throw;
+    }
+}
+
+std::vector<domain::Item>   SqliteItemRepository::list_by_type(const std::string& t) {
+    std::vector<domain::Item> list;
+
+    std::string select_by_type = select + " WHERE items.type_id = ?";
     sqlite3_stmt* stmt = nullptr;
 
     sqlite3_prepare_v2(con_.handle(), select_by_type.c_str(), -1, &stmt, nullptr);
-    sqlite3_bind_int(stmt, 1, type);
+    sqlite3_bind_int(stmt, 1, std::stoi(t));
     while(sqlite3_step(stmt) == SQLITE_ROW) {
         list.push_back(domain::Item{
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-            itot(atoi(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)))),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
         });
     }
@@ -93,11 +152,11 @@ std::vector<domain::Item>   SqliteItemRepository::list_by_type(domain::TYPES t) 
 }
 
 domain::Item                SqliteItemRepository::create(const domain::Item& item) {
-    const std::string sql = "INSERT INTO items(name, type, recipe_text) VALUES(?, ?, ?)";
+    const std::string sql = "INSERT INTO items(name, type_id, recipe_text) VALUES(?, ?, ?)";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, ttoi(item.type));
+    sqlite3_bind_int(stmt, 2, std::stoi(item.type));
     sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
@@ -108,17 +167,18 @@ domain::Item                SqliteItemRepository::create(const domain::Item& ite
 
     sqlite3_finalize(stmt);
 
-    domain::Item copy = item;
-    copy.id = static_cast<int>(sqlite3_last_insert_rowid(con_.handle()));
-    return copy;
+    auto created = get_by_id(static_cast<int>(sqlite3_last_insert_rowid(con_.handle())));
+    if (!created)
+        throw std::runtime_error("item was inserted but could not be retrieved");
+    return *created;
 }
 
 std::optional<domain::Item> SqliteItemRepository::update(const int& id, const domain::Item& item) {
-    const std::string sql = "UPDATE items SET name = ?, type = ?, recipe_text = ? WHERE id = ?";
+    const std::string sql = "UPDATE items SET name = ?, type_id = ?, recipe_text = ? WHERE id = ?";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, ttoi(item.type));
+    sqlite3_bind_int(stmt, 2, std::stoi(item.type));
     sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 4, id);
 
@@ -128,9 +188,7 @@ std::optional<domain::Item> SqliteItemRepository::update(const int& id, const do
         return std::nullopt;
     }
 
-    domain::Item copy = item;
-    copy.id = id;
-    return copy;
+    return get_by_id(id);
 }
 
 bool                        SqliteItemRepository::remove(const int& id) {

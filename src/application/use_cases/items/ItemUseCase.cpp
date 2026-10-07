@@ -16,7 +16,40 @@ std::vector<domain::Item>  ItemUseCase::list() {
     return repo_.list();
 }
 
-std::vector<domain::Item>  ItemUseCase::list_by_type(const domain::TYPES& t) {
+std::vector<std::pair<int, std::string>> ItemUseCase::list_types() {
+    return repo_.list_types();
+}
+
+Result<std::pair<int, std::string>> ItemUseCase::create_type(const std::string& name) {
+    if (name.empty()) return Result<std::pair<int, std::string>>::err("name is required");
+    try {
+        return Result<std::pair<int, std::string>>::ok(repo_.create_type(name));
+    } catch (const std::exception& e) {
+        return Result<std::pair<int, std::string>>::err(e.what());
+    }
+}
+
+Result<std::pair<int, std::string>> ItemUseCase::update_type(const int& id, const std::string& name) {
+    if (name.empty()) return Result<std::pair<int, std::string>>::err("name is required");
+    try {
+        auto updated = repo_.update_type(id, name);
+        if (!updated) return Result<std::pair<int, std::string>>::err("not found");
+        return Result<std::pair<int, std::string>>::ok(*updated);
+    } catch (const std::exception& e) {
+        return Result<std::pair<int, std::string>>::err(e.what());
+    }
+}
+
+Result<bool> ItemUseCase::remove_type(const int& id) {
+    try {
+        if (!repo_.remove_type(id)) return Result<bool>::err("not found");
+        return Result<bool>::ok(true);
+    } catch (const std::exception& e) {
+        return Result<bool>::err(e.what());
+    }
+}
+
+std::vector<domain::Item>  ItemUseCase::list_by_type(const std::string& t) {
     return repo_.list_by_type(t);
 }
 

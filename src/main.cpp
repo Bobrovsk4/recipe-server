@@ -14,11 +14,16 @@ int main() {
         // infrastructure
         infrastructure::SqliteConnection conn{"app.db"};
         conn.execute(R"(
+            PRAGMA foreign_keys = ON;
+            CREATE TABLE IF NOT EXISTS types (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL UNIQUE
+            );
             CREATE TABLE IF NOT EXISTS items (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
-                type            TEXT NOT NULL,
-                recipe_text    TEXT NOT NULL
+                type_id         INTEGER NOT NULL REFERENCES types(id),
+                recipe_text     TEXT NOT NULL
             );
         )");
         infrastructure::SqliteItemRepository item_repo{conn};

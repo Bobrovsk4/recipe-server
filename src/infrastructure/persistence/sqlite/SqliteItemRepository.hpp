@@ -11,7 +11,11 @@ public:
 
     std::optional<domain::Item> get_by_id(const int& id);
     std::vector<domain::Item>   list();
-    std::vector<domain::Item>   list_by_type(domain::TYPES t);
+    std::vector<std::pair<int, std::string>> list_types();
+    std::pair<int, std::string> create_type(const std::string& name);
+    std::optional<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
+    bool                        remove_type(const int& id);
+    std::vector<domain::Item>   list_by_type(const std::string& t);
     domain::Item                create(const domain::Item& item);
     std::optional<domain::Item> update(const int& id, const domain::Item& item);
     bool                        remove(const int& id);

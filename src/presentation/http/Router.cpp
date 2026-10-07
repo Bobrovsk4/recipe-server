@@ -14,7 +14,6 @@ std::vector<std::string> split_path(const std::string& path) {
     return out;
 }
 
-// "type=2&sort=name" -> {"type":"2", "sort":"name"}
 QueryParams parse_query(const std::string& q) {
     QueryParams out;
     std::stringstream ss(q);

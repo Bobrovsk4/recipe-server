@@ -16,7 +16,11 @@ public:
 
     Result<domain::Item>       get_by_id(const int& id);
     std::vector<domain::Item>  list();
-    std::vector<domain::Item>  list_by_type(const domain::TYPES& t);
+    std::vector<std::pair<int, std::string>> list_types();
+    Result<std::pair<int, std::string>> create_type(const std::string& name);
+    Result<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
+    Result<bool>               remove_type(const int& id);
+    std::vector<domain::Item>  list_by_type(const std::string& t);
     Result<CreateItemResponce> create(const CreateItemRequest& req);
     Result<domain::Item>       update(const int& id, const CreateItemRequest& req);
     Result<bool>               remove(const int& id);

@@ -6,18 +6,10 @@
 
 namespace domain {
 
-enum TYPES {
-    Asian,
-    Western,
-    Russian,
-    Chinese,
-    None
-};
-
 struct Item {
     std::optional<int> id;
     std::string name;
-    TYPES type;
+    std::string type;
     std::string recipe_text;
     // std::vector<std::string> comments;
     // TODO: добавить изображение

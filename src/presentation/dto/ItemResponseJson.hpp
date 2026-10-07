@@ -1,6 +1,5 @@
 #pragma once
 #include "domain/entities/Item.hpp"
-#include "presentation/serialization/JsonSerializer.hpp"
 #include <boost/json.hpp>
 
 namespace presentation {
@@ -11,7 +10,7 @@ inline boost::json::object to_json(const domain::Item& item) {
     boost::json::object obj;
     obj["id"]           = item.id.value_or(0);
     obj["name"]         = item.name;
-    obj["type"]         = ttos(item.type);
+    obj["type"]         = item.type;
     obj["recipe_text"] = item.recipe_text;
 
     // boost::json::array comments;

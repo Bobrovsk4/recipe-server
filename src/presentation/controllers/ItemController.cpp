@@ -22,15 +22,15 @@ void ItemController::register_routes(Router& r) {
 
     // GET /api/types
     r.add(verb::get, "/api/types",
-        [](const Request&,
+        [this](const Request&,
            const std::vector<std::string>&,
            const QueryParams&)
     {
         json::array arr;
-        for (int i = 0; i < static_cast<int>(domain::TYPES::None); ++i) {
+        for (const auto& type : items_.list_types()) {
             arr.push_back(json::object{
-                {"id",   i},
-                {"name", ttos(static_cast<domain::TYPES>(i))}
+                {"id", type.first},
+                {"name", type.second}
             });
         }
         return Router::make_json(status::ok, json::serialize(arr));
@@ -51,9 +51,7 @@ void ItemController::register_routes(Router& r) {
         }
 
         json::array arr;
-        for (const auto& it : items_.list()) {
-            if (filter_type && static_cast<int>(it.type) != *filter_type)
-                continue;
+        for (const auto& it : (filter_type ? items_.list_by_type(std::to_string(*filter_type)) : items_.list())) {
             arr.push_back(to_json(it));
         }
         return Router::make_json(status::ok, json::serialize(arr));
@@ -73,6 +71,72 @@ void ItemController::register_routes(Router& r) {
                 return Router::make_json(status::not_found, error_json(res.error()));
 
             return Router::make_json(status::ok, to_json_string(res.value()));
+        });
+
+    // POST /api/types
+    r.add(verb::post, "/api/types",
+        [this](const Request& req,
+               const std::vector<std::string>&,
+               const QueryParams&) {
+            try {
+                const auto body = json::parse(req.body()).as_object();
+                const auto* name = body.if_contains("name");
+                if (!name || !name->is_string())
+                    return Router::make_json(status::bad_request, error_json("name is required"));
+
+                auto result = items_.create_type(std::string(name->as_string()));
+                if (!result.has_value())
+                    return Router::make_json(status::bad_request, error_json(result.error()));
+                return Router::make_json(status::created, json::serialize(json::object{
+                    {"id", result.value().first},
+                    {"name", result.value().second}
+                }));
+            } catch (const std::exception& e) {
+                return Router::make_json(status::bad_request, error_json(e.what()));
+            }
+        });
+
+    // PUT /api/types/:id
+    r.add(verb::put, "/api/types/:id",
+        [this](const Request& req,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
+            auto id = to_int(p[0]);
+            if (!id)
+                return Router::make_json(status::bad_request, error_json("bad id"));
+            try {
+                const auto body = json::parse(req.body()).as_object();
+                const auto* name = body.if_contains("name");
+                if (!name || !name->is_string())
+                    return Router::make_json(status::bad_request, error_json("name is required"));
+                auto result = items_.update_type(*id, std::string(name->as_string()));
+                if (!result.has_value()) {
+                    const auto code = result.error() == "not found" ? status::not_found : status::conflict;
+                    return Router::make_json(code, error_json(result.error()));
+                }
+                return Router::make_json(status::ok, json::serialize(json::object{
+                    {"id", result.value().first},
+                    {"name", result.value().second}
+                }));
+            } catch (const std::exception& e) {
+                return Router::make_json(status::bad_request, error_json(e.what()));
+            }
+        });
+
+    // DELETE /api/types/:id
+    r.add(verb::delete_, "/api/types/:id",
+        [this](const Request&,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
+            auto id = to_int(p[0]);
+            if (!id)
+                return Router::make_json(status::bad_request, error_json("bad id"));
+            auto result = items_.remove_type(*id);
+            if (!result.has_value()) {
+                const auto code = result.error() == "not found" ? status::not_found : status::conflict;
+                return Router::make_json(code, error_json(result.error()));
+            }
+            return Router::make_json(status::no_content, "");
         });
 
     // POST /api/items
