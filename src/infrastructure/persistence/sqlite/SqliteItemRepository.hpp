@@ -12,6 +12,7 @@ public:
     std::optional<domain::Item> get_by_id(const int& id);
     std::vector<domain::Item>   list();
     std::vector<std::pair<int, std::string>> list_types();
+    std::vector<std::pair<int, std::string>> list_daytime_types();
     std::pair<int, std::string> create_type(const std::string& name);
     std::optional<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
     bool                        remove_type(const int& id);

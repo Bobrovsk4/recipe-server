@@ -12,10 +12,11 @@ public:
 
     virtual std::optional<Item> get_by_id(const int& id)                  = 0;
     virtual std::vector<Item>   list()                                    = 0;
-    virtual std::vector<std::pair<int, std::string>> list_types()          = 0;
+    virtual std::vector<std::pair<int, std::string>> list_types()         = 0;
+    virtual std::vector<std::pair<int, std::string>> list_daytime_types() = 0;
     virtual std::pair<int, std::string> create_type(const std::string& name) = 0;
     virtual std::optional<std::pair<int, std::string>> update_type(const int& id, const std::string& name) = 0;
-    virtual bool                remove_type(const int& id)                 = 0;
+    virtual bool                remove_type(const int& id)                = 0;
     virtual std::vector<Item>   list_by_type(const std::string& t)        = 0;
     virtual std::vector<Item>   list_by_filters(const std::optional<int>& type_id,
                                                 const std::optional<int>& daytime_type_id) = 0;

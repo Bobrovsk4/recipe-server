@@ -57,6 +57,18 @@ std::vector<std::pair<int, std::string>> SqliteItemRepository::list_types() {
     return types;
 }
 
+std::vector<std::pair<int, std::string>> SqliteItemRepository::list_daytime_types() {
+    std::vector<std::pair<int, std::string>> daytime_types;
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(con_.handle(), "SELECT id, name FROM daytime_types ORDER BY id", -1, &stmt, nullptr);
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        daytime_types.emplace_back(sqlite3_column_int(stmt, 0),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
+    }
+    sqlite3_finalize(stmt);
+    return daytime_types;
+}
+
 std::pair<int, std::string> SqliteItemRepository::create_type(const std::string& name) {
     sqlite3_stmt* stmt = nullptr;
     const char* sql = "INSERT INTO types(name) VALUES(?)";

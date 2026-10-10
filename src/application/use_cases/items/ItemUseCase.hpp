@@ -17,6 +17,7 @@ public:
     Result<domain::Item>       get_by_id(const int& id);
     std::vector<domain::Item>  list();
     std::vector<std::pair<int, std::string>> list_types();
+    std::vector<std::pair<int, std::string>> list_daytime_types();
     Result<std::pair<int, std::string>> create_type(const std::string& name);
     Result<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
     Result<bool>               remove_type(const int& id);

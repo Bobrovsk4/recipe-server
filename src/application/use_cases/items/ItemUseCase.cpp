@@ -20,6 +20,10 @@ std::vector<std::pair<int, std::string>> ItemUseCase::list_types() {
     return repo_.list_types();
 }
 
+std::vector<std::pair<int, std::string>> ItemUseCase::list_daytime_types() {
+    return repo_.list_daytime_types();
+}
+
 Result<std::pair<int, std::string>> ItemUseCase::create_type(const std::string& name) {
     if (name.empty()) return Result<std::pair<int, std::string>>::err("name is required");
     try {
