@@ -28,6 +28,7 @@ int main() {
                 name            TEXT NOT NULL,
                 type_id         INTEGER NOT NULL REFERENCES types(id),
                 daytime_type_id INTEGER NOT NULL REFERENCES daytime_types(id),
+                ingredients     TEXT[],
                 recipe_text     TEXT NOT NULL
             );
 
