@@ -37,7 +37,7 @@ void ItemController::register_routes(Router& r) {
         return Router::make_json(status::ok, json::serialize(arr));
     });
 
-    // GET /api/items[?type=N&datetime_type=N]
+    // GET /api/items[?type=N&daytime_type=N]
     r.add(verb::get, "/api/items",
         [this](const Request&,
                const std::vector<std::string>&,
@@ -51,11 +51,11 @@ void ItemController::register_routes(Router& r) {
                 return Router::make_json(status::bad_request,
                                           error_json("bad type"));
         }
-        if (auto it = query.find("datetime_type"); it != query.end()) {
+        if (auto it = query.find("daytime_type"); it != query.end()) {
             filter_daytime_type = to_int(it->second);
             if (!filter_daytime_type)
                 return Router::make_json(status::bad_request,
-                                          error_json("bad datetime_type"));
+                                          error_json("bad daytime_type"));
         }
 
         json::array arr;
