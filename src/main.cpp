@@ -11,6 +11,28 @@
 #include "presentation/http/Router.hpp"
 #include "presentation/http/Server.hpp"
 
+namespace {
+
+bool has_column(sqlite3* db, const std::string& table, const std::string& column) {
+    const std::string sql = "PRAGMA table_info(" + table + ")";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        throw std::runtime_error("sqlite schema inspection failure: " + std::string(sqlite3_errmsg(db)));
+
+    bool found = false;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const auto* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        if (name && column == name) {
+            found = true;
+            break;
+        }
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
+
+}
+
 int main() {
     try {
         // infrastructure
@@ -37,6 +59,8 @@ int main() {
             INSERT OR IGNORE INTO daytime_types (id, name)
             VALUES (1,'завтрак'), (2,'обед'), (3,'ужин'), (4, 'общее');
         )");
+        if (!has_column(conn.handle(), "items", "ingredients"))
+            conn.execute("ALTER TABLE items ADD COLUMN ingredients TEXT NOT NULL DEFAULT '[]'");
         infrastructure::SqliteItemRepository item_repo{conn};
 
         // application
