@@ -59,6 +59,8 @@ int main() {
             INSERT OR IGNORE INTO daytime_types (id, name)
             VALUES (1,'завтрак'), (2,'обед'), (3,'ужин'), (4, 'общее');
         )");
+        if (!has_column(conn.handle(), "items", "daytime_type_id"))
+            conn.execute("ALTER TABLE items ADD COLUMN daytime_type_id INTEGER NOT NULL DEFAULT 4");
         if (!has_column(conn.handle(), "items", "ingredients"))
             conn.execute("ALTER TABLE items ADD COLUMN ingredients TEXT NOT NULL DEFAULT '[]'");
         infrastructure::SqliteItemRepository item_repo{conn};
