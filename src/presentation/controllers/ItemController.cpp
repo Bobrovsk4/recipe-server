@@ -5,6 +5,7 @@
 
 #include <boost/json.hpp>
 #include <optional>
+#include <random>
 
 namespace presentation {
 
@@ -71,6 +72,23 @@ void ItemController::register_routes(Router& r) {
                 return Router::make_json(status::not_found, error_json(res.error()));
 
             return Router::make_json(status::ok, to_json_string(res.value()));
+        });
+
+    // GET /api/items/random
+    r.add(verb::get, "/api/items/random",
+        [this](const Request&,
+               const std::vector<std::string>&,
+               const QueryParams&) {
+            auto all = items_.list();
+            if (all.empty())
+                return Router::make_json(status::not_found,
+                                        error_json("no items available"));
+
+            std::random_device dev;
+            std::mt19937 rng(dev());
+            std::uniform_int_distribution<size_t> dist(0, all.size() - 1);
+            const auto& item = all[dist(rng)];
+            return Router::make_json(status::ok, to_json_string(item));
         });
 
     // POST /api/types
