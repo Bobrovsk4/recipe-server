@@ -19,12 +19,20 @@ int main() {
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL UNIQUE
             );
+            CREATE TABLE IF NOT EXISTS daytime_types (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL UNIQUE
+            );
             CREATE TABLE IF NOT EXISTS items (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
                 type_id         INTEGER NOT NULL REFERENCES types(id),
+                daytime_type_id INTEGER NOT NULL REFERENCES daytime_types(id),
                 recipe_text     TEXT NOT NULL
             );
+
+            INSERT OR IGNORE INTO daytime_types (id, name)
+            VALUES (1,'завтрак'), (2,'обед'), (3,'ужин');
         )");
         infrastructure::SqliteItemRepository item_repo{conn};
 

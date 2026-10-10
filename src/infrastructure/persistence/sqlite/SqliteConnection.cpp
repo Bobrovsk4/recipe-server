@@ -19,6 +19,7 @@ void SqliteConnection::execute(const std::string& sql) {
     char *err = nullptr;
     if (sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &err) != SQLITE_OK) {
         std::string msg = err ? err : "unknown";
+        sqlite3_free(err);
         throw std::runtime_error("sqlite exec error: " + msg);
     }
 }
