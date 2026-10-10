@@ -12,7 +12,15 @@ namespace presentation {
 namespace {
 
 std::optional<int> to_int(const std::string& s) {
-    try { return std::stoi(s); } catch (...) { return std::nullopt; }
+    try {
+        std::size_t parsed = 0;
+        const int value = std::stoi(s, &parsed);
+        if (parsed != s.size() || value <= 0)
+            return std::nullopt;
+        return value;
+    } catch (...) {
+        return std::nullopt;
+    }
 }
 
 }

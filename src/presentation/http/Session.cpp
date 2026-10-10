@@ -1,4 +1,6 @@
 #include "presentation/http/Session.hpp"
+#include <chrono>
+#include <iomanip>
 #include <iostream>
 
 namespace presentation {
@@ -21,6 +23,11 @@ void Session::on_read(beast::error_code ec) {
         return;
     }
 
+    const auto request_started = std::chrono::steady_clock::now();
+    std::clog << "HTTP request method=" << req_.method_string()
+              << " target=" << std::quoted(std::string(req_.target().data(), req_.target().size()))
+              << " body=" << std::quoted(req_.body()) << '\n';
+
     Response res;
     try {
         res = router_.dispatch(req_);
@@ -36,10 +43,11 @@ void Session::on_read(beast::error_code ec) {
                                 R"({"error":"internal server error"})");
     }
 
-    if (res.result_int() >= 400)
-        std::cerr << "Invalid or failed request " << req_.method_string() << ' '
-                  << req_.target() << " -> " << res.result_int() << " ("
-                  << res.body() << ")\n";
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - request_started).count();
+    std::clog << "HTTP response status=" << res.result_int()
+              << " body=" << std::quoted(res.body())
+              << " duration_ms=" << elapsed << '\n';
     res.version(req_.version());
     res.keep_alive(false);
     do_write(std::move(res));
