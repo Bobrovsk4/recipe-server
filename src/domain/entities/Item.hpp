@@ -9,7 +9,8 @@ namespace domain {
 struct Item {
     std::optional<int> id;
     std::string name;
-    std::string type;
+    int type_id;
+    int daytime_type_id;
     std::vector<std::string> ingredients;
     std::string recipe_text;
     // std::vector<std::string> comments;

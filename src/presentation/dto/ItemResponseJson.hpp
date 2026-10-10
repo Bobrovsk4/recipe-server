@@ -8,9 +8,10 @@ namespace json = boost::json;
 
 inline boost::json::object to_json(const domain::Item& item) {
     boost::json::object obj;
-    obj["id"]           = item.id.value_or(0);
-    obj["name"]         = item.name;
-    obj["type"]         = item.type;
+    obj["id"]               = item.id.value_or(0);
+    obj["name"]             = item.name;
+    obj["type_id"]          = item.type_id;
+    obj["daytime_type_id"]  = item.daytime_type_id;
     boost::json::array ingredients;
     for (const auto& ingredient : item.ingredients)
         ingredients.emplace_back(ingredient);
