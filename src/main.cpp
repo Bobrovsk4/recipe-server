@@ -33,7 +33,7 @@ int main() {
             );
 
             INSERT OR IGNORE INTO daytime_types (id, name)
-            VALUES (1,'завтрак'), (2,'обед'), (3,'ужин');
+            VALUES (1,'завтрак'), (2,'обед'), (3,'ужин'), (4, 'общее');
         )");
         infrastructure::SqliteItemRepository item_repo{conn};
 
