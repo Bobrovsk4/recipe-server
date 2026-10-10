@@ -37,22 +37,29 @@ void ItemController::register_routes(Router& r) {
         return Router::make_json(status::ok, json::serialize(arr));
     });
 
-    // GET /api/items[?type=N]
+    // GET /api/items[?type=N&datetime_type=N]
     r.add(verb::get, "/api/items",
         [this](const Request&,
                const std::vector<std::string>&,
                const QueryParams& query)
     {
         std::optional<int> filter_type;
+        std::optional<int> filter_daytime_type;
         if (auto it = query.find("type"); it != query.end()) {
             filter_type = to_int(it->second);
             if (!filter_type)
                 return Router::make_json(status::bad_request,
-                                          error_json("bad type")); 
+                                          error_json("bad type"));
+        }
+        if (auto it = query.find("datetime_type"); it != query.end()) {
+            filter_daytime_type = to_int(it->second);
+            if (!filter_daytime_type)
+                return Router::make_json(status::bad_request,
+                                          error_json("bad datetime_type"));
         }
 
         json::array arr;
-        for (const auto& it : (filter_type ? items_.list_by_type(std::to_string(*filter_type)) : items_.list())) {
+        for (const auto& it : items_.list_by_filters(filter_type, filter_daytime_type)) {
             arr.push_back(to_json(it));
         }
         return Router::make_json(status::ok, json::serialize(arr));

@@ -131,13 +131,26 @@ bool SqliteItemRepository::remove_type(const int& id) {
 }
 
 std::vector<domain::Item>   SqliteItemRepository::list_by_type(const std::string& t) {
+    return list_by_filters(std::stoi(t), std::nullopt);
+}
+
+std::vector<domain::Item> SqliteItemRepository::list_by_filters(
+    const std::optional<int>& type_id,
+    const std::optional<int>& daytime_type_id) {
     std::vector<domain::Item> list;
 
-    std::string select_by_type = select + " WHERE items.type_id = ?";
+    std::string filtered_select = select;
+    if (type_id || daytime_type_id) {
+        filtered_select += " WHERE ";
+        if (type_id) filtered_select += "items.type_id = ?";
+        if (type_id && daytime_type_id) filtered_select += " AND ";
+        if (daytime_type_id) filtered_select += "items.daytime_type_id = ?";
+    }
     sqlite3_stmt* stmt = nullptr;
-
-    sqlite3_prepare_v2(con_.handle(), select_by_type.c_str(), -1, &stmt, nullptr);
-    sqlite3_bind_int(stmt, 1, std::stoi(t));
+    sqlite3_prepare_v2(con_.handle(), filtered_select.c_str(), -1, &stmt, nullptr);
+    int parameter = 1;
+    if (type_id) sqlite3_bind_int(stmt, parameter++, *type_id);
+    if (daytime_type_id) sqlite3_bind_int(stmt, parameter, *daytime_type_id);
     while(sqlite3_step(stmt) == SQLITE_ROW) {
         list.push_back(domain::Item{
             sqlite3_column_int(stmt, 0),

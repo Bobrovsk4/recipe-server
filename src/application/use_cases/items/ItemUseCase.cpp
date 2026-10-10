@@ -53,6 +53,12 @@ std::vector<domain::Item>  ItemUseCase::list_by_type(const std::string& t) {
     return repo_.list_by_type(t);
 }
 
+std::vector<domain::Item> ItemUseCase::list_by_filters(
+    const std::optional<int>& type_id,
+    const std::optional<int>& daytime_type_id) {
+    return repo_.list_by_filters(type_id, daytime_type_id);
+}
+
 Result<CreateItemResponce> ItemUseCase::create(const CreateItemRequest& req) {
     auto item = req.to_domain();
     if (auto err = domain::ItemValidator::validate(item)) {
