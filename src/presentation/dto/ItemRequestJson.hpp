@@ -17,16 +17,16 @@ parse_create_item_request(const std::string& body) {
 
     if (auto* t = obj.if_contains("name"))
         req.name = std::string(t->as_string());
-    auto* type = obj.if_contains("type_id");
+    auto* type = obj.if_contains("type");
     if (!type || !type->is_int64())
-        throw std::invalid_argument("type_id must be an integer");
+        throw std::invalid_argument("type must be an integer");
     const auto type_id = type->as_int64();
     if (type_id <= 0 || type_id > std::numeric_limits<int>::max())
-        throw std::invalid_argument("type_id must be a positive integer");
+        throw std::invalid_argument("type must be a positive integer");
     req.type_id = static_cast<int>(type_id);
-    if (auto* d = obj.if_contains("daytime_type_id")) {
-        if (!d->is_int64() || d->as_int64() <= 0)
-            throw std::invalid_argument("daytime_type_id must be a positive integer");
+    if (auto* d = obj.if_contains("daytime_type")) {
+        if (!d->is_int64() || d->as_int64() <= 0 || d->as_int64() > std::numeric_limits<int>::max())
+            throw std::invalid_argument("daytime_type must be a positive integer");
         req.daytime_type_id = static_cast<int>(d->as_int64());
     }
     if (auto* r = obj.if_contains("recipe_text"))
