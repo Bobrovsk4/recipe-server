@@ -1,6 +1,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 #include "application/use_cases/items/ItemUseCase.hpp"
 #include "infrastructure/persistence/sqlite/SqliteConnection.hpp"
@@ -27,8 +29,8 @@ int main() {
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
                 type_id         INTEGER NOT NULL REFERENCES types(id),
-                daytime_type_id INTEGER NOT NULL REFERENCES daytime_types(id),
-                ingredients     TEXT[],
+                daytime_type_id INTEGER NOT NULL DEFAULT 4 REFERENCES daytime_types(id),
+                ingredients     TEXT NOT NULL DEFAULT '[]',
                 recipe_text     TEXT NOT NULL
             );
 

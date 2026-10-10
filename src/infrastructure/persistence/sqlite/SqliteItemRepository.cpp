@@ -1,9 +1,29 @@
 #include <stdexcept>
+#include <boost/json.hpp>
 #include "infrastructure/persistence/sqlite/SqliteItemRepository.hpp"
 
 namespace infrastructure {
 
-static const std::string select = "SELECT items.id, items.name, types.name, items.recipe_text FROM items JOIN types ON items.type_id = types.id";
+static const std::string select = "SELECT items.id, items.name, types.name, items.ingredients, items.recipe_text FROM items JOIN types ON items.type_id = types.id";
+
+static std::vector<std::string> read_ingredients(sqlite3_stmt* stmt, int column) {
+    const auto* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, column));
+    if (!text) return {};
+
+    std::vector<std::string> result;
+    const auto parsed = boost::json::parse(text).as_array();
+    result.reserve(parsed.size());
+    for (const auto& ingredient : parsed)
+        result.emplace_back(ingredient.as_string());
+    return result;
+}
+
+static std::string ingredients_json(const std::vector<std::string>& ingredients) {
+    boost::json::array array;
+    for (const auto& ingredient : ingredients)
+        array.emplace_back(ingredient);
+    return boost::json::serialize(array);
+}
 
 SqliteItemRepository::SqliteItemRepository(SqliteConnection& con) : con_(con) {}
 
@@ -20,7 +40,8 @@ std::optional<domain::Item> SqliteItemRepository::get_by_id(const int& id) {
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+            read_ingredients(stmt, 3),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))
         };
     }
 
@@ -37,7 +58,8 @@ std::vector<domain::Item>   SqliteItemRepository::list() {
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+            read_ingredients(stmt, 3),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))
         });
     }
     
@@ -168,7 +190,8 @@ std::vector<domain::Item> SqliteItemRepository::list_by_filters(
             sqlite3_column_int(stmt, 0),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
-            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3))
+            read_ingredients(stmt, 3),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4))
         });
     }
 
@@ -177,12 +200,14 @@ std::vector<domain::Item> SqliteItemRepository::list_by_filters(
 }
 
 domain::Item                SqliteItemRepository::create(const domain::Item& item) {
-    const std::string sql = "INSERT INTO items(name, type_id, recipe_text) VALUES(?, ?, ?)";
+    const std::string sql = "INSERT INTO items(name, type_id, ingredients, recipe_text) VALUES(?, ?, ?, ?)";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 2, std::stoi(item.type));
-    sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
+    const auto serialized_ingredients = ingredients_json(item.ingredients);
+    sqlite3_bind_text(stmt, 3, serialized_ingredients.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         std::string err_msg = sqlite3_errmsg(con_.handle());
@@ -199,13 +224,15 @@ domain::Item                SqliteItemRepository::create(const domain::Item& ite
 }
 
 std::optional<domain::Item> SqliteItemRepository::update(const int& id, const domain::Item& item) {
-    const std::string sql = "UPDATE items SET name = ?, type_id = ?, recipe_text = ? WHERE id = ?";
+    const std::string sql = "UPDATE items SET name = ?, type_id = ?, ingredients = ?, recipe_text = ? WHERE id = ?";
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(con_.handle(), sql.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, item.name.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 2, std::stoi(item.type));
-    sqlite3_bind_text(stmt, 3, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 4, id);
+    const auto serialized_ingredients = ingredients_json(item.ingredients);
+    sqlite3_bind_text(stmt, 3, serialized_ingredients.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, item.recipe_text.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 5, id);
 
     bool ok = sqlite3_step(stmt) == SQLITE_DONE;
     sqlite3_finalize(stmt);
