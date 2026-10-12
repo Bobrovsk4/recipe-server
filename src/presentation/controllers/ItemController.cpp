@@ -90,6 +90,26 @@ void ItemController::register_routes(Router& r) {
             return Router::make_json(status::ok, to_json_string(item));
         });
 
+    // GET /api/items/random/:type_id
+    r.add(verb::get, "/api/items/random/:type_id",
+        [this](const Request&,
+               const std::vector<std::string>& p,
+               const QueryParams&) {
+            auto type_id = p[0];
+            if (type_id.length() == 0)
+                return Router::make_json(status::bad_request, error_json("bad id"));
+
+            auto all = items_.list_by_type(type_id);
+            if (all.size() == 0)
+                return Router::make_json(status::not_found, error_json("no items"));
+
+            std::random_device dev;
+            std::mt19937 rng(dev());
+            std::uniform_int_distribution<size_t> dist(0, all.size() - 1);
+            const auto& item = all[dist(rng)];
+            return Router::make_json(status::ok, to_json_string(item));
+        });
+
     // GET /api/items/:id
     r.add(verb::get, "/api/items/:id",
         [this](const Request&,
