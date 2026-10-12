@@ -17,6 +17,7 @@ public:
     std::optional<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
     bool                        remove_type(const int& id);
     std::vector<domain::Item>   list_by_type(const std::string& t);
+    std::vector<domain::Item>   list_by_daytime_type(const std::string& t);
     std::vector<domain::Item>   list_by_filters(const std::optional<int>& type_id,
                                                 const std::optional<int>& daytime_type_id);
     domain::Item                create(const domain::Item& item);

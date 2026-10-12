@@ -170,6 +170,10 @@ std::vector<domain::Item>   SqliteItemRepository::list_by_type(const std::string
     return list_by_filters(std::stoi(t), std::nullopt);
 }
 
+std::vector<domain::Item>   SqliteItemRepository::list_by_daytime_type(const std::string& t) {
+    return list_by_filters(std::nullopt, std::stoi(t));
+}
+
 std::vector<domain::Item> SqliteItemRepository::list_by_filters(
     const std::optional<int>& type_id,
     const std::optional<int>& daytime_type_id) {

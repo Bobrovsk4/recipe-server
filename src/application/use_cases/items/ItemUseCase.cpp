@@ -57,6 +57,10 @@ std::vector<domain::Item>  ItemUseCase::list_by_type(const std::string& t) {
     return repo_.list_by_type(t);
 }
 
+std::vector<domain::Item>  ItemUseCase::list_by_daytime_type(const std::string& t) {
+    return repo_.list_by_daytime_type(t);
+}
+
 std::vector<domain::Item> ItemUseCase::list_by_filters(
     const std::optional<int>& type_id,
     const std::optional<int>& daytime_type_id) {

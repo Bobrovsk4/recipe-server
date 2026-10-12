@@ -18,6 +18,7 @@ public:
     virtual std::optional<std::pair<int, std::string>> update_type(const int& id, const std::string& name) = 0;
     virtual bool                remove_type(const int& id)                = 0;
     virtual std::vector<Item>   list_by_type(const std::string& t)        = 0;
+    virtual std::vector<Item>   list_by_daytime_type(const std::string& t)= 0;
     virtual std::vector<Item>   list_by_filters(const std::optional<int>& type_id,
                                                 const std::optional<int>& daytime_type_id) = 0;
     virtual Item                create(const Item& item)                  = 0;

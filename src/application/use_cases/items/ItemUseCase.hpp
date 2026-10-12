@@ -22,6 +22,7 @@ public:
     Result<std::pair<int, std::string>> update_type(const int& id, const std::string& name);
     Result<bool>               remove_type(const int& id);
     std::vector<domain::Item>  list_by_type(const std::string& t);
+    std::vector<domain::Item>  list_by_daytime_type(const std::string& t);
     std::vector<domain::Item>  list_by_filters(const std::optional<int>& type_id,
                                                const std::optional<int>& daytime_type_id);
     Result<CreateItemResponce> create(const CreateItemRequest& req);
