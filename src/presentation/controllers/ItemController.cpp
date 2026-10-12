@@ -73,55 +73,28 @@ void ItemController::register_routes(Router& r) {
         return Router::make_json(status::ok, json::serialize(arr));
     });
 
-    // GET /api/items/random
+    // GET /api/items/random[?type_id=N&daytime_type_id=N]
     r.add(verb::get, "/api/items/random",
         [this](const Request&,
                const std::vector<std::string>&,
-               const QueryParams&) {
-            auto all = items_.list();
+               const QueryParams& query) {
+            std::optional<int> type_id;
+            std::optional<int> daytime_type_id;
+            if (auto it = query.find("type_id"); it != query.end()) {
+                type_id = to_int(it->second);
+                if (!type_id)
+                    return Router::make_json(status::bad_request, error_json("bad type_id"));
+            }
+            if (auto it = query.find("daytime_type_id"); it != query.end()) {
+                daytime_type_id = to_int(it->second);
+                if (!daytime_type_id)
+                    return Router::make_json(status::bad_request, error_json("bad daytime_type_id"));
+            }
+
+            auto all = items_.list_by_filters(type_id, daytime_type_id);
             if (all.empty())
                 return Router::make_json(status::not_found,
                                         error_json("no items available"));
-
-            std::random_device dev;
-            std::mt19937 rng(dev());
-            std::uniform_int_distribution<size_t> dist(0, all.size() - 1);
-            const auto& item = all[dist(rng)];
-            return Router::make_json(status::ok, to_json_string(item));
-        });
-
-    // GET /api/items/random/type/:type_id
-    r.add(verb::get, "/api/items/random/type/:type_id",
-        [this](const Request&,
-               const std::vector<std::string>& p,
-               const QueryParams&) {
-            auto type_id = p[0];
-            if (type_id.length() == 0)
-                return Router::make_json(status::bad_request, error_json("bad id"));
-
-            auto all = items_.list_by_type(type_id);
-            if (all.size() == 0)
-                return Router::make_json(status::not_found, error_json("no items"));
-
-            std::random_device dev;
-            std::mt19937 rng(dev());
-            std::uniform_int_distribution<size_t> dist(0, all.size() - 1);
-            const auto& item = all[dist(rng)];
-            return Router::make_json(status::ok, to_json_string(item));
-        });
-
-    // GET /api/items/random/daytime_type/:type_id
-    r.add(verb::get, "/api/items/random/daytime_type/:daytime_type_id",
-        [this](const Request&,
-               const std::vector<std::string>& p,
-               const QueryParams&) {
-            auto daytime_type_id = p[0];
-            if (daytime_type_id.length() == 0)
-                return Router::make_json(status::bad_request, error_json("bad id"));
-
-            auto all = items_.list_by_daytime_type(daytime_type_id);
-            if (all.size() == 0)
-                return Router::make_json(status::not_found, error_json("no items"));
 
             std::random_device dev;
             std::mt19937 rng(dev());
