@@ -42,11 +42,6 @@ parse_create_item_request(const std::string& body) {
         }
     }
 
-    // if (auto* arr = obj.if_contains("comments")) {
-    //     for (const auto& v : arr->as_array())
-    //         req.comments.emplace_back(std::string(v.as_string()));
-    // }
-
     return req;
 }
 }

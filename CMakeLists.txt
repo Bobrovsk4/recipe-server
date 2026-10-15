@@ -10,6 +10,7 @@ find_package(SQLite3 REQUIRED)
 # ---------- application ----------
 add_library(application STATIC
     src/application/use_cases/items/ItemUseCase.cpp
+    src/application/use_cases/drinks/DrinkUseCase.cpp
 )
 target_include_directories(application PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
@@ -17,6 +18,7 @@ target_include_directories(application PUBLIC ${CMAKE_SOURCE_DIR}/src)
 add_library(infrastructure STATIC
     src/infrastructure/persistence/sqlite/SqliteConnection.cpp
     src/infrastructure/persistence/sqlite/SqliteItemRepository.cpp
+    src/infrastructure/persistence/sqlite/SqliteDrinkRepository.cpp
 )
 target_include_directories(infrastructure PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(infrastructure PUBLIC SQLite3::SQLite3)
@@ -24,6 +26,7 @@ target_link_libraries(infrastructure PUBLIC SQLite3::SQLite3)
 # ---------- presentation ----------
 add_library(presentation STATIC
     src/presentation/controllers/ItemController.cpp
+    src/presentation/controllers/DrinkController.cpp
     src/presentation/http/Router.cpp
     src/presentation/http/Session.cpp
     src/presentation/http/Server.cpp

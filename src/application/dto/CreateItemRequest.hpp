@@ -12,7 +12,6 @@ struct CreateItemRequest {
     int daytime_type_id = 4;
     std::vector<std::string> ingredients;
     std::string recipe_text;
-    // std::vector<std::string> comments;
 
     domain::Item to_domain() const {
         return domain::Item{std::nullopt, name, type_id, daytime_type_id, ingredients, recipe_text};

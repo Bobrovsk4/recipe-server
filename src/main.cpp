@@ -4,9 +4,12 @@
 #include <stdexcept>
 #include <string>
 
+#include "application/use_cases/drinks/DrinkUseCase.hpp"
 #include "application/use_cases/items/ItemUseCase.hpp"
 #include "infrastructure/persistence/sqlite/SqliteConnection.hpp"
+#include "infrastructure/persistence/sqlite/SqliteDrinkRepository.hpp"
 #include "infrastructure/persistence/sqlite/SqliteItemRepository.hpp"
+#include "presentation/controllers/DrinkController.hpp"
 #include "presentation/controllers/ItemController.hpp"
 #include "presentation/http/Router.hpp"
 #include "presentation/http/Server.hpp"
@@ -58,20 +61,40 @@ int main() {
 
             INSERT OR IGNORE INTO daytime_types (id, name)
             VALUES (1,'завтрак'), (2,'обед'), (3,'ужин'), (4, 'общее');
+
+
+            CREATE TABLE IF NOT EXISTS drink_types (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL UNIQUE
+            );
+            CREATE TABLE IF NOT EXISTS drinks (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL,
+                type_id         INTEGER NOT NULL REFERENCES drink_types(id),
+                ingredients     TEXT NOT NULL DEFAULT '[]',
+                recipe_text     TEXT NOT NULL
+            );
+
+            INSERT OR IGNORE INTO drink_types (id, name)
+            VALUES (1,'алкогольное'), (2,'безалкогольное');
         )");
         if (!has_column(conn.handle(), "items", "daytime_type_id"))
             conn.execute("ALTER TABLE items ADD COLUMN daytime_type_id INTEGER NOT NULL DEFAULT 4");
         if (!has_column(conn.handle(), "items", "ingredients"))
             conn.execute("ALTER TABLE items ADD COLUMN ingredients TEXT NOT NULL DEFAULT '[]'");
         infrastructure::SqliteItemRepository item_repo{conn};
+        infrastructure::SqliteDrinkRepository drink_repo{conn};
 
         // application
         application::ItemUseCase items{item_repo};
+        application::DrinkUseCase drinks{drink_repo};
 
         // presentation
         presentation::Router router;
         presentation::ItemController item_controller{items};
         item_controller.register_routes(router);
+        presentation::DrinkController drink_controller{drinks};
+        drink_controller.register_routes(router);
 
         const auto address = boost::asio::ip::make_address("0.0.0.0");
         boost::asio::io_context ioc{1};

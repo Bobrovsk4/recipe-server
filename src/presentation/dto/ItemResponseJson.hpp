@@ -18,11 +18,6 @@ inline boost::json::object to_json(const domain::Item& item) {
     obj["ingredients"] = std::move(ingredients);
     obj["recipe_text"] = item.recipe_text;
 
-    // boost::json::array comments;
-    // for (const auto& c : item.comments)
-    //     comments.emplace_back(c);
-    // obj["comments"] = std::move(comments);
-
     return obj;
 }
 
